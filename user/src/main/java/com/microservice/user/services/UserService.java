@@ -1,6 +1,7 @@
 package com.microservice.user.services;
 
 import com.microservice.user.models.UserModel;
+import com.microservice.user.producers.UserProducer;
 import com.microservice.user.repositories.UserRepository;
 
 import org.springframework.stereotype.Service;
@@ -11,8 +12,11 @@ public class UserService {
 
    final UserRepository userRepository;
 
-   public UserService(UserRepository userRepository){
+    final UserProducer userProducer;
+
+   public UserService(UserRepository userRepository, UserProducer userProducer){
        this.userRepository = userRepository;
+       this.userProducer = userProducer;
    }
 
    /**
@@ -22,6 +26,11 @@ public class UserService {
     * Ou seja, se uma das operações falhar é gerado o rollback*/
     @Transactional
     public UserModel save(UserModel userModel){
-        return userRepository.save(userModel);
+        userModel = userRepository.save(userModel);
+
+        // vai chamar o método que encapsula a lógica de criação de uma mensagem de e-mail a partir de um objeto UserModel e a publicação dessa mensagem em uma fila RabbitMQ.
+        userProducer.publishMessageEmail(userModel);
+
+        return userModel;
     }
 }
