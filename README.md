@@ -725,4 +725,705 @@ public void publishMessageEmail(UserModel userModel){
 
 A classe `UserProducer` é um componente para a arquitetura de microserviços, permitindo a comunicação eficiente e assíncrona entre serviços distintos. Ao utilizar o RabbitMQ como intermediário, ela contribui para a escalabilidade e resiliência do sistema, permitindo que os microserviços operem de forma independente e respondam a eventos assíncronos.
 
+# Microservice API Email
+
+# Arquivo de Propriedades - `application.properties`
+
+O arquivo de propriedades (`application.properties`) é utilizado para configurar e personalizar diversos aspectos da aplicação. No contexto do `email-microservice`, este arquivo desempenha um papel fundamental na configuração de propriedades relacionadas ao servidor, banco de dados, RabbitMQ, e-mail e outros. 
+
+### **1. Configurações do Servidor:**
+
+```properties
+server.port=8082
+```
+
+- **Descrição:** Define a porta na qual o servidor do `email-microservice` será executado. Neste caso, o serviço estará acessível na porta `8082`.
+
+### **2. Configurações do Banco de Dados:**
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/microservice-correio-eletronico
+spring.datasource.username=postgres
+spring.datasource.password=admin
+spring.jpa.hibernate.ddl-auto=update
+```
+
+- **Descrição:**
+  - `spring.datasource.url`: Define a URL do banco de dados PostgreSQL.
+  - `spring.datasource.username`: Define o nome de usuário do banco de dados.
+  - `spring.datasource.password`: Define a senha do banco de dados.
+  - `spring.jpa.hibernate.ddl-auto`: Define a estratégia de atualização do esquema do banco de dados. Neste caso, a opção `update` permite que o Hibernate crie automaticamente as tabelas se não existirem.
+
+### **3. Configurações do RabbitMQ:**
+
+```properties
+spring.rabbitmq.addresses=amqps://dhbykska:kPsWDJ2-NEvI1998Xe8jth4mjqJfWscz@shrimp.rmq.cloudamqp.com/dhbykska
+broker.queue.email.name=default.email
+```
+
+- **Descrição:**
+  - `spring.rabbitmq.addresses`: Especifica os endereços do servidor RabbitMQ aos quais o aplicativo deve se conectar.
+  - `broker.queue.email.name`: Configura o nome da fila de mensagens para o serviço de envio de e-mails.
+
+### **4. Configurações de Envio de E-mails:**
+
+```properties
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=testeaplicacao14@gmail.com
+spring.mail.password=lhsc yrib wqfx aqni
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+```
+
+- **Descrição:**
+  - `spring.mail.host`: Define o host do servidor SMTP para envio de e-mails (no exemplo, é utilizado o SMTP do Gmail).
+  - `spring.mail.port`: Define a porta do servidor SMTP.
+  - `spring.mail.username`: Define o nome de usuário para autenticação no servidor SMTP.
+  - `spring.mail.password`: Define a senha para autenticação no servidor SMTP.
+  - `spring.mail.properties.mail.smtp.auth`: Habilita a autenticação SMTP.
+  - `spring.mail.properties.mail.smtp.starttls.enable`: Habilita o STARTTLS, uma extensão de segurança para o protocolo de transferência de correio simples (SMTP).
+
+### **5. Conclusão:**
+
+O arquivo de propriedades (`application.properties`) vai configurar o comportamento do `email-microservice`. Ao definir parâmetros como porta do servidor, conexão com banco de dados, configurações do RabbitMQ e detalhes de envio de e-mails, ele permite que o microserviço opere de acordo com os requisitos específicos da aplicação. Essas configurações são essenciais para garantir a comunicação adequada, persistência de dados e funcionalidade de envio de e-mails.
+
+# Camada Model - `EmailModel`
+
+A camada model (`EmailModel`) é responsável por representar a estrutura de dados dos e-mails no contexto do `email-microservice`.
+
+```java
+package com.microservice.email.models;
+
+import com.microservice.email.enums.StatusEmail;
+import jakarta.persistence.*;
+
+import java.io.Serializable;
+import java.time.LocalDateTime;
+import java.util.UUID;
+
+@Entity
+@Table(name = "TB_EMAILS")
+public class EmailModel implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID emailId;
+
+    private UUID userId;
+    private String emailFrom; /* quem envia o email */
+    private String emailTo; /* para quem envia o email */
+    private String subject; /* título do email */
+
+    @Column(columnDefinition = "TEXT")
+    private String text;
+
+    private LocalDateTime sendDateEmail;
+    private StatusEmail statusEmail;
+
+    public UUID getEmailId() {
+        return emailId;
+    }
+
+    public void setEmailId(UUID emailId) {
+        this.emailId = emailId;
+    }
+
+    public UUID getUserId() {
+        return userId;
+    }
+
+    public void setUserId(UUID userId) {
+        this.userId = userId;
+    }
+
+    public String getEmailFrom() {
+        return emailFrom;
+    }
+
+    public void setEmailFrom(String emailFrom) {
+        this.emailFrom = emailFrom;
+    }
+
+    public String getEmailTo() {
+        return emailTo;
+    }
+
+    public void setEmailTo(String emailTo) {
+        this.emailTo = emailTo;
+    }
+
+    public String getSubject() {
+        return subject;
+    }
+
+    public void setSubject(String subject) {
+        this.subject = subject;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public void setText(String text) {
+        this.text = text;
+    }
+
+    public LocalDateTime getSendDateEmail() {
+        return sendDateEmail;
+    }
+
+    public void setSendDateEmail(LocalDateTime sendDateEmail) {
+        this.sendDateEmail = sendDateEmail;
+    }
+
+    public StatusEmail getStatusEmail() {
+        return statusEmail;
+    }
+
+    public void setStatusEmail(StatusEmail statusEmail) {
+        this.statusEmail = statusEmail;
+    }
+}
+```
+
+### **1. Definição da Classe:**
+
+A classe `EmailModel` está localizada no pacote `com.microservice.email.models` e é anotada com `@Entity`, indicando que ela é uma entidade persistente e pode ser mapeada para uma tabela em um banco de dados relacional.
+
+### **2. Campos da Classe:**
+
+```java
+public class EmailModel implements Serializable {
+
+    // ... (códigos anteriores)
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID emailId;
+
+    private UUID userId;
+    private String emailFrom;
+    private String emailTo;
+    private String subject;
+    private String text;
+
+    @Column(columnDefinition = "TEXT")
+    private LocalDateTime sendDateEmail;
+    private StatusEmail statusEmail;
+}
+```
+
+- **Descrição:**
+  - `emailId`: Identificador único associado a cada e-mail (gerado automaticamente).
+  - `userId`: Identificador único do usuário associado ao e-mail.
+  - `emailFrom`: Endereço de e-mail do remetente.
+  - `emailTo`: Endereço de e-mail do destinatário.
+  - `subject`: Título do e-mail.
+  - `text`: Corpo do e-mail.
+  - `sendDateEmail`: Data e hora do envio do e-mail.
+  - `statusEmail`: Status do e-mail, representado por um enum `StatusEmail` (definido em `com.microservice.email.enums`).
+
+### **3. Métodos de Acesso (Getters e Setters):**
+
+```java
+public UUID getEmailId() { /*...*/ }
+public void setEmailId(UUID emailId) { /*...*/ }
+
+public UUID getUserId() { /*...*/ }
+public void setUserId(UUID userId) { /*...*/ }
+
+public String getEmailFrom() { /*...*/ }
+public void setEmailFrom(String emailFrom) { /*...*/ }
+
+public String getEmailTo() { /*...*/ }
+public void setEmailTo(String emailTo) { /*...*/ }
+
+public String getSubject() { /*...*/ }
+public void setSubject(String subject) { /*...*/ }
+
+public String getText() { /*...*/ }
+public void setText(String text) { /*...*/ }
+
+public LocalDateTime getSendDateEmail() { /*...*/ }
+public void setSendDateEmail(LocalDateTime sendDateEmail) { /*...*/ }
+
+public StatusEmail getStatusEmail() { /*...*/ }
+public void setStatusEmail(StatusEmail statusEmail) { /*...*/ }
+```
+
+- **Descrição:** Métodos de acesso (getters e setters) são fornecidos para cada campo da classe, seguindo as convenções JavaBeans. Esses métodos permitem a obtenção e definição dos valores dos campos.
+
+### **4. Anotações Adicionais:**
+
+```java
+@Column(columnDefinition = "TEXT")
+```
+
+- **Descrição:** Essa anotação é usada para definir a coluna `text` como um tipo `TEXT` no banco de dados, permitindo armazenar conteúdos mais longos, como o corpo do e-mail.
+
+# Camada de Modelo - Enum `StatusEmail`
+
+O enum `StatusEmail` está localizado no pacote `com.microservice.email.enums` e é utilizado na camada de modelo para representar o status de um e-mail no contexto do `email-microservice`. Abaixo, fornecemos uma documentação detalhada para este enum.
+
+### **1. Definição do Enum:**
+
+O enum `StatusEmail` é uma enumeração que representa os possíveis estados de um e-mail.
+
+```java
+public enum StatusEmail {
+    SENT, ERROR;
+}
+```
+
+### **2. Valores do Enum:**
+
+- `SENT`: Indica que o e-mail foi enviado com sucesso.
+- `ERROR`: Indica que ocorreu um erro durante o envio do e-mail.
+
+### **3. Utilização:**
+
+O enum `StatusEmail` é utilizado na classe `EmailModel` como um campo para representar o status de um e-mail.
+
+```java
+public class EmailModel implements Serializable {
+    // ... (códigos anteriores)
+    private StatusEmail statusEmail;
+    // ... (códigos posteriores)
+}
+```
+
+### **4. Significado dos Estados:**
+
+- **`SENT` (Enviado):**
+  - Indica que o e-mail foi enviado com sucesso sem problemas.
+
+- **`ERROR` (Erro):**
+  - Indica que ocorreu um erro durante o envio do e-mail. Essa categoria pode incluir falhas como problemas na conexão com o servidor de e-mails, endereço de destino inválido, entre outros.
+
+### **5. Uso no `EmailService`:**
+
+O enum é utilizado no método `sendEmail` da classe `EmailService` para atribuir o status do e-mail com base no resultado do envio.
+
+```java
+public class EmailService {
+    // ... (códigos anteriores)
+    public EmailModel sendEmail(EmailModel emailModel){
+        try{
+            // ... (códigos anteriores)
+
+            emailModel.setStatusEmail(StatusEmail.SENT);
+
+        }catch (MailException e){
+            emailModel.setStatusEmail(StatusEmail.ERROR);
+        }finally {
+            return  emailRepository.save(emailModel);
+        }
+    }
+    // ... (códigos posteriores)
+}
+```
+
+### **6. Conclusão:**
+
+O enum `StatusEmail` proporciona uma maneira clara e legível de representar os diferentes estados possíveis de um e-mail no `email-microservice`. Ao utilizar esse enum como um campo na classe `EmailModel`, a aplicação pode facilmente distinguir entre e-mails enviados com sucesso e e-mails que encontraram algum tipo de erro durante o processo de envio. Isso simplifica a lógica de manipulação de estados e fornece uma abordagem estruturada para lidar com resultados de envio de e-mails.
+
+# Camada Repository - `EmailRepository`
+
+A camada repository (`EmailRepository`) é responsável por fornecer métodos para acessar e manipular dados da entidade `EmailModel` no banco de dados. 
+
+```java
+package com.microservice.email.repositories;
+
+import com.microservice.email.models.EmailModel;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.UUID;
+
+public interface EmailRepository extends JpaRepository<EmailModel, UUID> {
+}
+```
+
+### **1. Definição da Interface:**
+
+A interface `EmailRepository` está localizada no pacote `com.microservice.email.repositories` e estende a interface `JpaRepository` fornecida pelo Spring Data JPA.
+
+```java
+public interface EmailRepository extends JpaRepository<EmailModel, UUID> {
+}
+```
+
+- **Descrição:**
+  - `JpaRepository<EmailModel, UUID>`: `EmailRepository` estende `JpaRepository`, indicando que herda métodos de acesso e manipulação de dados padrão para a entidade `EmailModel`. O segundo parâmetro `UUID` especifica o tipo do identificador único da entidade.
+
+### **2. Métodos Herdados:**
+
+A interface `JpaRepository` fornece uma variedade de métodos herdados para realizar operações comuns em uma entidade, como salvar, buscar, atualizar e excluir registros no banco de dados.
+
+- Exemplos de métodos herdados incluem:
+  - `save(T entity)`: Salva uma entidade no banco de dados.
+  - `findById(ID id)`: Busca uma entidade por seu identificador único.
+  - `findAll()`: Retorna todas as entidades no banco de dados.
+  - `deleteById(ID id)`: Exclui uma entidade com base em seu identificador único.
+
+# Camada Service - `EmailService`
+
+A camada service (`EmailService`) é responsável por fornecer serviços relacionados ao envio de e-mails no contexto do `email-microservice`. 
+
+```java
+package com.microservice.email.services;
+
+import com.microservice.email.enums.StatusEmail;
+import com.microservice.email.models.EmailModel;
+import com.microservice.email.repositories.EmailRepository;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.MailException;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+
+@Service
+public class EmailService {
+
+    final EmailRepository emailRepository;
+    final JavaMailSender emailSender; /** Interface JavaMailSender é utilizada para envio e recebimento de emails usando a API JavaMail padrão */
+
+    public EmailService(EmailRepository emailRepository, JavaMailSender emailSender) {
+        this.emailRepository = emailRepository;
+        this.emailSender = emailSender;
+    }
+
+    @Value(value = "${spring.mail.username}")
+    private String emailFrom;
+
+    /** Método utilizado com implementar o corpo do email e enviá-lo */
+    @Transactional
+    public EmailModel sendEmail(EmailModel emailModel){
+        try{
+            emailModel.setSendDateEmail(LocalDateTime.now());
+            emailModel.setEmailFrom(emailFrom);
+
+            /** A classe SimpleMailMessage fornece uma representação simples de um e-mail.*/
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(emailModel.getEmailTo());
+            message.setSubject(emailModel.getSubject());
+            message.setText(emailModel.getText());
+
+            emailSender.send(message);
+
+            // Envia um Status de enviado (declarado no Enum StatusEmail)
+            emailModel.setStatusEmail(StatusEmail.SENT);
+
+        }catch (MailException e){
+            emailModel.setStatusEmail(StatusEmail.ERROR);
+        }finally {
+            return  emailRepository.save(emailModel);
+        }
+    }
+
+}
+```
+
+### **1. Definição da Classe:**
+
+A classe `EmailService` está localizada no pacote `com.microservice.email.services` e é anotada com `@Service`, indicando que é um componente de serviço gerenciado pelo Spring.
+
+```java
+@Service
+public class EmailService {
+    // ... (códigos anteriores)
+}
+```
+
+### **2. Dependências Injetadas:**
+
+A classe `EmailService` possui duas dependências injetadas via construtor:
+
+```java
+public EmailService(EmailRepository emailRepository, JavaMailSender emailSender) {
+    this.emailRepository = emailRepository;
+    this.emailSender = emailSender;
+}
+```
+
+- **Descrição:**
+  - `emailRepository`: Instância de `EmailRepository` que fornece métodos para acessar e manipular dados relacionados a e-mails no banco de dados.
+  - `emailSender`: Instância de `JavaMailSender`, uma interface que facilita o envio e recebimento de e-mails usando a API JavaMail padrão.
+
+### **3. Configuração do Endereço de E-mail do Remetente:**
+
+```java
+@Value(value = "${spring.mail.username}")
+private String emailFrom;
+```
+
+- **Descrição:**
+  - A anotação `@Value` é usada para injetar o valor da propriedade `spring.mail.username` no campo `emailFrom`. Essa propriedade geralmente contém o endereço de e-mail do remetente.
+
+### **4. Método `sendEmail`:**
+
+```java
+@Transactional
+public EmailModel sendEmail(EmailModel emailModel){
+    try{
+        // ... (códigos anteriores)
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(emailModel.getEmailTo());
+        message.setSubject(emailModel.getSubject());
+        message.setText(emailModel.getText());
+
+        emailSender.send(message);
+
+        // Envia um Status de enviado (declarado no Enum StatusEmail)
+        emailModel.setStatusEmail(StatusEmail.SENT);
+
+    }catch (MailException e){
+        emailModel.setStatusEmail(StatusEmail.ERROR);
+    }finally {
+        return  emailRepository.save(emailModel);
+    }
+}
+```
+
+- **Descrição:**
+  - O método `sendEmail` é responsável por preparar, enviar e salvar informações sobre um e-mail.
+  - `@Transactional`: Garante que a transação é gerenciada pelo Spring, permitindo o rollback se ocorrerem exceções.
+  - `emailModel.setSendDateEmail(LocalDateTime.now())`: Define a data e hora do envio do e-mail como o momento atual.
+  - `emailModel.setEmailFrom(emailFrom)`: Define o endereço de e-mail do remetente.
+  - `SimpleMailMessage message = new SimpleMailMessage();`: Cria uma instância de `SimpleMailMessage` para representar a mensagem de e-mail.
+  - `emailSender.send(message);`: Utiliza `emailSender` para enviar a mensagem de e-mail.
+  - `emailModel.setStatusEmail(StatusEmail.SENT)`: Define o status do e-mail como "enviado" no caso de sucesso.
+  - `catch (MailException e)`: Captura exceções relacionadas ao envio de e-mail, definindo o status do e-mail como "erro".
+  - `finally`: Independentemente do resultado, salva as informações do e-mail no banco de dados usando `emailRepository.save(emailModel)`.
+
+# Camada DTOs - Record `EmailRecordDto`
+
+A classe `EmailRecordDto` está localizada no pacote `com.microservice.email.dtos` e é um record que representa um objeto de transferência de dados (DTO) no contexto do `email-microservice`. 
+
+```java
+package com.microservice.email.dtos;
+
+import java.util.UUID;
+
+public record EmailRecordDto(UUID userId, String emailTo, String subject, String text) {
+}
+```
+
+### **1. Definição do Record:**
+
+O record `EmailRecordDto` é uma estrutura de dados imutável e concisa, introduzida no Java 14, que é usada para representar dados de e-mails antes de serem processados pelo `email-microservice`.
+
+```java
+public record EmailRecordDto(UUID userId, String emailTo, String subject, String text) {
+}
+```
+
+### **2. Campos do Record:**
+
+- `userId`: Identificador único do usuário associado ao e-mail.
+- `emailTo`: Endereço de e-mail do destinatário.
+- `subject`: Título do e-mail.
+- `text`: Corpo do e-mail.
+
+### **3. Propriedades do Record:**
+
+- **Imutabilidade:**
+  - Como um record, os campos são automaticamente finais e imutáveis, o que significa que uma vez atribuído um valor, ele não pode ser alterado.
+
+- **Métodos Gerados Automaticamente:**
+  - O record gera automaticamente métodos `equals`, `hashCode`, e `toString`, simplificando a implementação desses métodos.
+
+### **5. Vantagens do Record:**
+
+- **Sintaxe Concisa:**
+  - A sintaxe concisa do record torna a definição e o uso de DTOs mais compactos e legíveis.
+
+- **Imutabilidade Automática:**
+  - A imutabilidade automática simplifica o gerenciamento de estado e contribui para a robustez do código.
+
+# Camada de Configuração - `RabbitMQConfig`
+
+A classe `RabbitMQConfig` está localizada no pacote `com.microservice.email.configs` e é responsável por configurar aspectos relacionados ao RabbitMQ, um sistema de mensagens para o `email-microservice`. 
+
+```java
+package com.microservice.email.configs;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class RabbitMQConfig {
+
+    @Value("${broker.queue.email.name}")
+    private String queue;
+
+    /** Esse método representa uma fila RabbitMQ.*/
+    @Bean
+    public Queue queue(){
+        return new Queue(queue, true);
+    }
+
+    /**
+     * Esse método será usada para converter objetos Java em mensagens JSON ao enviar mensagens para RabbitMQ e vice-versa ao receber mensagens da fila.*/
+    @Bean
+    public Jackson2JsonMessageConverter messageConverter(){
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        return new Jackson2JsonMessageConverter(objectMapper);
+    }
+}
+```
+
+### **1. Anotação `@Configuration`:**
+
+```java
+@Configuration
+public class RabbitMQConfig {
+    // ... (códigos anteriores)
+}
+```
+
+- **Descrição:**
+  - A anotação `@Configuration` indica que a classe é uma classe de configuração Spring, fornecendo configurações para o contexto de aplicação.
+
+### **2. Dependências Injetadas:**
+
+```java
+@Value("${broker.queue.email.name}")
+private String queue;
+```
+
+- **Descrição:**
+  - `@Value("${broker.queue.email.name}")`: Injeta o valor da propriedade `broker.queue.email.name` no campo `queue`. Esta propriedade representa o nome da fila RabbitMQ configurada.
+
+### **3. Método `queue`:**
+
+```java
+@Bean
+public Queue queue(){
+    return new Queue(queue, true);
+}
+```
+
+- **Descrição:**
+  - O método `queue` é anotado com `@Bean`, indicando que é um bean gerenciado pelo Spring.
+  - Cria e retorna uma instância de `Queue` (fila) com o nome especificado pela propriedade `broker.queue.email.name`. O segundo parâmetro (`true`) indica que a fila é durável, ou seja, persistirá mesmo após o reinício do servidor RabbitMQ.
+
+### **4. Método `messageConverter`:**
+
+```java
+@Bean
+public Jackson2JsonMessageConverter messageConverter(){
+    ObjectMapper objectMapper = new ObjectMapper();
+    return new Jackson2JsonMessageConverter(objectMapper);
+}
+```
+
+- **Descrição:**
+  - O método `messageConverter` é anotado com `@Bean`, indicando que é um bean gerenciado pelo Spring.
+  - Cria e retorna uma instância de `Jackson2JsonMessageConverter`, que será usada para converter objetos Java em mensagens JSON ao enviar mensagens para RabbitMQ e vice-versa ao receber mensagens da fila.
+ 
+## Sobre a classe `Jackson2JsonMessageConverter`
+
+A classe `Jackson2JsonMessageConverter` faz parte do ecossistema Spring para mensageria e é utilizada para converter objetos Java em mensagens JSON ao enviar mensagens para o RabbitMQ e vice-versa ao receber mensagens da fila. Ela é especialmente útil quando você precisa serializar e desserializar objetos complexos para mensagens JSON em um ambiente de comunicação assíncrona, como o RabbitMQ.
+
+APontos-chave sobre a classe `Jackson2JsonMessageConverter`:
+
+1. **Objetivo:**
+   - O principal objetivo desta classe é facilitar a conversão entre objetos Java e representações JSON durante a troca de mensagens em um sistema baseado em mensageria.
+
+2. **Integração com Jackson:**
+   - Ela utiliza a biblioteca Jackson, que é uma biblioteca de serialização/desserialização JSON muito popular no ecossistema Java.
+
+3. **Configuração:**
+   - Normalmente, é configurada como um bean no contexto da aplicação Spring. 
+
+4. **Conversão para JSON:**
+   - Ao enviar mensagens para o RabbitMQ, esta classe converte objetos Java em representações JSON que são então enviadas como payload da mensagem.
+
+5. **Conversão de JSON para Objeto Java:**
+   - Ao receber mensagens da fila RabbitMQ, esta classe faz a conversão inversa, transformando o payload JSON de uma mensagem de volta para um objeto Java.
+
+## Sobre a classe `ObjectMapper`
+
+A classe `ObjectMapper` faz parte da biblioteca Jackson, uma das bibliotecas mais populares para manipulação de JSON em Java. O `ObjectMapper` é responsável por mapear objetos Java para JSON (serialização) e JSON para objetos Java (desserialização).
+
+## Sobre `RabbitMQConfig`
+
+A classe `RabbitMQConfig` desempenha um papel essencial na configuração do RabbitMQ para o `email-microservice`. Ao definir a fila RabbitMQ e o conversor de mensagens JSON, esta classe garante que a comunicação assíncrona entre microservices seja eficiente e semântica. Além disso, ao usar anotações Spring como `@Configuration` e `@Bean`, a classe se integra perfeitamente ao ciclo de vida de inicialização do Spring, proporcionando uma configuração centralizada e fácil de entender.
+
+Obrigado por fornecer o contexto. O site [CloudAMQP](https://www.cloudamqp.com/) é uma plataforma que oferece serviços gerenciados para RabbitMQ na nuvem. Ele facilita a implantação e o gerenciamento de instâncias RabbitMQ sem a necessidade de configurar e manter um servidor RabbitMQ por conta própria.
+
+Através do CloudAMQP, você pode provisionar e escalar instâncias do RabbitMQ, monitorar o desempenho, configurar filas, exchanges e outros recursos relacionados à mensageria.
+
+Para obter informações detalhadas sobre os microservices da fila RabbitMQ hospedados no CloudAMQP, geralmente você pode usar a interface web fornecida pela própria plataforma. Essa interface web pode oferecer métricas, estatísticas e outras informações relacionadas à operação e desempenho dos seus serviços de mensageria.
+
+Ao acessar o CloudAMQP, você deve encontrar ferramentas e recursos para gerenciar suas instâncias RabbitMQ, monitorar o tráfego, configurar filas e exchanges, entre outras funcionalidades relacionadas à RabbitMQ na nuvem. 
+
+# Camada de Consumers - `EmailConsumer`
+
+A classe `EmailConsumer` está localizada no pacote `com.microservice.email.consumers` e desempenha um papel fundamental no processo de consumir mensagens da fila RabbitMQ e encaminhá-las para processamento adicional. 
+
+### **1. Anotação `@Component`:**
+
+```java
+@Component
+public class EmailConsumer {
+    // ... (códigos anteriores)
+}
+```
+
+- **Descrição:**
+  - A anotação `@Component` indica que a classe é um componente gerenciado pelo Spring, permitindo que seja automaticamente detectada e configurada durante o escaneamento de componentes.
+
+### **2. Dependências Injetadas:**
+
+```java
+final EmailService emailService;
+```
+
+- **Descrição:**
+  - O construtor da classe injeta uma instância de `EmailService`, permitindo que o `EmailConsumer` utilize os serviços fornecidos pela camada de serviço (`EmailService`).
+
+### **3. Método `listenEmailQueue`:**
+
+```java
+@RabbitListener(queues = "${broker.queue.email.name}")
+public void listenEmailQueue(@Payload EmailRecordDto emailRecordDto){
+    // ... (códigos dentro do método)
+}
+```
+
+- **Descrição:**
+  - O método `listenEmailQueue` é anotado com `@RabbitListener`, indicando que este método será chamado sempre que houver uma mensagem na fila especificada.
+  - A anotação `@Payload` indica que o parâmetro do método (`EmailRecordDto`) será preenchido com o corpo da mensagem recebida.
+  - Dentro do método, a mensagem recebida é convertida para um objeto `EmailRecordDto`.
+
+### **4. Processamento da Mensagem:**
+
+```java
+var emailModel = new EmailModel();
+BeanUtils.copyProperties(emailRecordDto, emailModel);
+emailService.sendEmail(emailModel);
+```
+
+- **Descrição:**
+  - Um novo objeto `EmailModel` é criado para representar a mensagem recebida.
+  - O método `copyProperties` da classe `BeanUtils` é utilizado para copiar as propriedades do `EmailRecordDto` para o `EmailModel`, facilitando a conversão entre os dois tipos.
+  - O objeto `EmailModel` é então passado para o método `sendEmail` da instância de `EmailService` para processamento adicional.
+
+### **5. Conclusão:**
+
+A classe `EmailConsumer` desempenha um papel vital ao consumir mensagens da fila RabbitMQ e encaminhá-las para a camada de serviço (`EmailService`) para processamento adicional, como o envio efetivo de e-mails. Ao usar a anotação `@RabbitListener`, essa classe integra-se perfeitamente à infraestrutura de mensageria assíncrona fornecida pelo RabbitMQ, garantindo uma comunicação eficiente e assíncrona entre os diferentes microservices.
+
 # Feito por: `Daniel Penelva de Andrade`
